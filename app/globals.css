@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 15, 15, 15;
+  --background-end-rgb: 27, 27, 27;
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 6%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 11%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 11%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 328 100% 50%;
+    --primary-foreground: 0 0% 6%;
+    --secondary: 180 100% 50%;
+    --secondary-foreground: 0 0% 6%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 84 100% 50%;
+    --accent-foreground: 0 0% 6%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 328 100% 50%;
+    --input: 0 0% 15%;
+    --ring: 180 100% 50%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0F0F0F;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #FF0080, #00FFFF);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #00FFFF, #8AFF00);
+}
+
+/* Glitch animation */
+@keyframes glitch {
+  0% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 2px);
+  }
+  40% {
+    transform: translate(-2px, -2px);
+  }
+  60% {
+    transform: translate(2px, 2px);
+  }
+  80% {
+    transform: translate(2px, -2px);
+  }
+  100% {
+    transform: translate(0);
+  }
+}
+
+.glitch {
+  animation: glitch 0.3s infinite;
+}
