@@ -4,21 +4,26 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Sparkles, Zap } from 'lucide-react';
+import { Sparkles, Zap, AlertCircle } from 'lucide-react';
 
 interface SessionStartFormProps {
   onSubmit: (email: string, personaHint: string) => void;
   isLoading: boolean;
+  error?: string | null;
 }
 
-export function SessionStartForm({ onSubmit, isLoading }: SessionStartFormProps) {
+export function SessionStartForm({ onSubmit, isLoading, error }: SessionStartFormProps) {
   const [email, setEmail] = useState('');
   const [personaHint, setPersonaHint] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('[SessionStartForm] Form submitted with email:', email);
+    
     if (email.trim()) {
       onSubmit(email, personaHint);
+    } else {
+      console.warn('[SessionStartForm] Email is empty, not submitting');
     }
   };
 
@@ -46,6 +51,20 @@ export function SessionStartForm({ onSubmit, isLoading }: SessionStartFormProps)
           </p>
         </div>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-xl">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-red-400 text-sm font-['Exo',sans-serif]">
+                {error}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -91,7 +110,7 @@ export function SessionStartForm({ onSubmit, isLoading }: SessionStartFormProps)
         <Button
           type="submit"
           disabled={isLoading}
-          className="w-full h-14 bg-gradient-to-r from-[#FF0080] to-[#00FFFF] hover:from-[#FF0080]/80 hover:to-[#00FFFF]/80 text-white font-bold text-lg font-['Orbitron',sans-serif] tracking-wider uppercase relative overflow-hidden group transition-all duration-300 shadow-lg shadow-[#FF0080]/50"
+          className="w-full h-14 bg-gradient-to-r from-[#FF0080] to-[#00FFFF] hover:from-[#FF0080]/80 hover:to-[#00FFFF]/80 text-white font-bold text-lg font-['Orbitron',sans-serif] tracking-wider uppercase relative overflow-hidden group transition-all duration-300 shadow-lg shadow-[#FF0080]/50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span className="relative z-10 flex items-center justify-center gap-2">
             {isLoading ? (

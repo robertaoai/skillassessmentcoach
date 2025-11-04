@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useSession } from '@/hooks/useSession';
 import { AnswerForm } from '@/components/answer-form';
-import { getSessionState } from '@/lib/api';
-import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // Mock questions - 9 questions in 3x3 pattern
@@ -23,44 +23,129 @@ const QUESTIONS = [
 export default function AnswerPage() {
   const params = useParams();
   const router = useRouter();
-  const sessionId = params.sessionId as string;
+  const urlSessionId = params.sessionId as string;
+  
+  const { 
+    sessionId, 
+    currentQuestionId, 
+    setCurrentQuestionId,
+    answeredQuestions,
+    addAnsweredQuestion,
+    isHydrated 
+  } = useSession();
   
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answeredQuestions, setAnsweredQuestions] = useState<Set<string>>(new Set());
+  const [validationError, setValidationError] = useState<string | null>(null);
 
+  // Validate session on mount
   useEffect(() => {
-    // Restore session state from localStorage
-    const state = getSessionState();
-    if (state.sessionId !== sessionId) {
-      // Session mismatch, redirect to home
-      router.push('/');
+    if (!isHydrated) return;
+
+    console.log('[AnswerPage] Validating session...', {
+      urlSessionId,
+      storedSessionId: sessionId,
+      isHydrated,
+    });
+
+    // Session mismatch - redirect to home
+    if (!sessionId || sessionId !== urlSessionId) {
+      console.error('[AnswerPage] Session mismatch, redirecting to home');
+      setValidationError('Session not found. Please start a new assessment.');
+      setTimeout(() => {
+        router.push('/');
+      }, 2000);
+      return;
     }
-  }, [sessionId, router]);
+
+    console.log('[AnswerPage] Session validated successfully');
+
+    // Restore question index from answered questions
+    if (answeredQuestions.length > 0) {
+      const lastAnsweredIndex = QUESTIONS.findIndex(
+        q => q.id === answeredQuestions[answeredQuestions.length - 1]
+      );
+      if (lastAnsweredIndex >= 0 && lastAnsweredIndex < QUESTIONS.length - 1) {
+        const nextIndex = lastAnsweredIndex + 1;
+        console.log('[AnswerPage] Resuming from question', nextIndex + 1);
+        setCurrentQuestionIndex(nextIndex);
+        setCurrentQuestionId(QUESTIONS[nextIndex].id);
+      }
+    } else {
+      // Start from first question
+      setCurrentQuestionId(QUESTIONS[0].id);
+    }
+  }, [isHydrated, sessionId, urlSessionId, answeredQuestions, router, setCurrentQuestionId]);
 
   const currentQuestion = QUESTIONS[currentQuestionIndex];
-  const progress = ((answeredQuestions.size) / QUESTIONS.length) * 100;
+  const progress = ((answeredQuestions.length) / QUESTIONS.length) * 100;
   const isLastQuestion = currentQuestionIndex === QUESTIONS.length - 1;
 
   const handleAnswerSubmitted = () => {
+    console.log('[AnswerPage] Answer submitted for question:', currentQuestion.id);
+    
     // Mark current question as answered
-    setAnsweredQuestions(prev => new Set(prev).add(currentQuestion.id));
+    addAnsweredQuestion(currentQuestion.id);
 
     // If last question, navigate to completion page
     if (isLastQuestion) {
+      console.log('[AnswerPage] Last question answered, navigating to completion');
       setTimeout(() => {
         router.push(`/complete/${sessionId}`);
       }, 1500);
     } else {
       // Move to next question
+      const nextIndex = currentQuestionIndex + 1;
+      console.log('[AnswerPage] Moving to next question:', nextIndex + 1);
       setTimeout(() => {
-        setCurrentQuestionIndex(prev => prev + 1);
+        setCurrentQuestionIndex(nextIndex);
+        setCurrentQuestionId(QUESTIONS[nextIndex].id);
       }, 1000);
     }
   };
 
   const handleBackToHome = () => {
+    console.log('[AnswerPage] Navigating back to home');
     router.push('/');
   };
+
+  // Show loading during hydration
+  if (!isHydrated) {
+    console.log('[AnswerPage] Waiting for hydration...');
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-[#0F0F0F] to-[#1B1B1B] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 text-[#00FFFF] animate-spin" />
+          <p className="text-gray-400 font-['Exo',sans-serif]">Loading assessment...</p>
+        </div>
+      </main>
+    );
+  }
+
+  // Show validation error
+  if (validationError) {
+    console.log('[AnswerPage] Showing validation error:', validationError);
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-[#0F0F0F] to-[#1B1B1B] flex items-center justify-center">
+        <div className="max-w-md mx-auto p-8">
+          <div className="p-6 border border-red-500/50 rounded-xl bg-red-500/10">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-red-400 font-['Exo',sans-serif] text-lg">
+                  {validationError}
+                </p>
+                <p className="text-gray-400 text-sm mt-2 font-['Exo',sans-serif]">
+                  Redirecting to home...
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  console.log('[AnswerPage] Rendering question', currentQuestionIndex + 1, 'of', QUESTIONS.length);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#0F0F0F] to-[#1B1B1B] relative overflow-hidden">
@@ -114,7 +199,7 @@ export default function AnswerPage() {
         {/* Answer Form */}
         <div className="max-w-2xl mx-auto">
           <AnswerForm
-            sessionId={sessionId}
+            sessionId={sessionId!}
             questionId={currentQuestion.id}
             questionText={currentQuestion.text}
             onAnswerSubmitted={handleAnswerSubmitted}
